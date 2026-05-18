@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>تسجيل الدخول - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #1e3c2c 0%, #2a5a3a 100%); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .login-container { max-width: 400px; width: 100%; background: #2e4a2e; border-radius: 40px; padding: 40px 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; }
+        h1 { color: #ffcf4a; font-size: 32px; margin-bottom: 10px; }
+        .subtitle { color: #c5e0b4; margin-bottom: 30px; font-size: 14px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 30px; font-size: 16px; background: #f5f5dc; text-align: right; }
+        button { width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 30px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-login { background: #ffcf4a; color: #1f3b1a; }
+        .btn-signup { background: #3b5e2b; color: white; }
+        .message { margin-top: 15px; padding: 10px; border-radius: 20px; font-size: 13px; }
+        .error { background: #8b3a3a; color: #ffc0c0; }
+        .success { background: #2a6b2a; color: #c0ffc0; }
+        hr { border-color: #4f7840; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="app">
+        <h1>🌾 منصة الألعاب</h1>
+        <div class="subtitle">مزرعة | سوق | مصنع | نقل</div>
+        <input type="text" id="username" placeholder="اسم المستخدم">
+        <input type="password" id="password" placeholder="كلمة المرور">
+        <button class="btn-login" id="loginBtn">🔓 تسجيل دخول</button>
+        <button class="btn-signup" id="signupBtn">📝 إنشاء حساب جديد</button>
+        <div id="message"></div>
+    </div>
+    <script>
+        const API_BASE = 'https://farm-game-server.onrender.com'; // غيّر بعد نشر الخادم
+
+        async function signup() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const msgDiv = document.getElementById('message');
+            if (!username || !password) { msgDiv.innerHTML = '<div class="message error">املأ الحقول</div>'; return; }
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('userId', data.userId);
+                msgDiv.innerHTML = '<div class="message success">✅ تم التسجيل والدخول! جاري التحويل...</div>';
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } catch (err) {
+                msgDiv.innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const msgDiv = document.getElementById('message');
+            if (!username || !password) { msgDiv.innerHTML = '<div class="message error">املأ الحقول</div>'; return; }
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('userId', data.userId);
+                msgDiv.innerHTML = '<div class="message success">✅ تم الدخول! جاري التحويل...</div>';
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            } catch (err) {
+                msgDiv.innerHTML = `<div class="message error">❌ ${err.message}</div>`;
+            }
+        }
+
+        document.getElementById('signupBtn').onclick = signup;
+        document.getElementById('loginBtn').onclick = login;
+    </script>
+</body>
+</html>
