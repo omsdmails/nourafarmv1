@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>النقل والتوصيل - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(145deg, #1e3c2c 0%, #2a5a3a 100%); font-family: system-ui, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .container { max-width: 900px; width: 100%; background: #2e4a2e; border-radius: 35px; overflow: hidden; color: #f5f5dc; box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+        .header { background: #1f3b1a; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .gold { background: #ffcf4a; color: #1f3b1a; padding: 8px 16px; border-radius: 40px; font-weight: bold; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: #3b5e2b; color: white; padding: 8px 16px; border-radius: 30px; text-decoration: none; font-weight: bold; }
+        .content { padding: 20px; }
+        .card { background: #1f3b1a; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
+        .truck-card, .shipment-card { background: #2c5e2a; border-radius: 20px; padding: 12px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        button { background: #ffcf4a; border: none; padding: 8px 16px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .message { background: #2a6b2a; padding: 10px; border-radius: 30px; text-align: center; margin-top: 15px; display: none; }
+        .error-message { background: #8b3a3a; }
+        .progress-bar { background: #4f7840; height: 8px; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+        .progress-fill { background: #ffcf4a; width: 0%; height: 100%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div id="app">⏳ جاري التحميل...</div>
+    <script>
+        const API_BASE = 'https://farm-game-server.onrender.com';
+        function formatMoney(fils) {
+            if (fils < 10) return fils + ' فلس';
+            if (fils < 1000) return (fils / 10) + ' قرش';
+            let dinars = fils / 1000;
+            let remainder = fils % 1000;
+            if (remainder === 0) return dinars + ' دينار';
+            return dinars + ' دينار و ' + (remainder / 10) + ' قرش';
+        }
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'index.html'; throw new Error('No token'); }
+            options.headers = { 'Content-Type': 'application/json', ...options.headers, 'Authorization': `Bearer ${token}` };
+            const res = await fetch(API_BASE + url, options);
+            if (res.status === 401 || res.status === 403) { localStorage.removeItem('token'); window.location.href = 'index.html'; throw new Error('Session expired'); }
+            return res.json();
+        }
+        let player = { gold: 0 };
+        let trucks = [];
+        async function loadPlayer() { try { const data = await fetchWithAuth('/api/user/data'); player.gold = data.gold; } catch(e) {} }
+        async function loadTrucks() { try { const data = await fetchWithAuth('/api/trucks/list'); trucks = data.trucks || []; if(trucks.length===0) await fetchWithAuth('/api/trucks/buy-default', { method: 'POST' }); } catch(e) {} }
+        async function buyTruck() { try { const data = await fetchWithAuth('/api/trucks/buy', { method: 'POST', body: JSON.stringify({ price: 100000 }) }); if(data.error) showMessage(data.error, true); else { showMessage('✅ اشتريت شاحنة جديدة'); loadTrucks(); loadPlayer(); renderDelivery(); } } catch(e) { showMessage(e.message, true); } }
+        async function acceptShipment(shipmentId) { try { const data = await fetchWithAuth('/api/shipments/accept', { method: 'POST', body: JSON.stringify({ shipmentId }) }); if(data.error) showMessage(data.error, true); else { showMessage('🚛 تم استلام الطلب'); loadTrucks(); renderDelivery(); } } catch(e) { showMessage(e.message, true); } }
+        async function completeShipment(shipmentId) { try { const data = await fetchWithAuth('/api/shipments/complete', { method: 'POST', body: JSON.stringify({ shipmentId }) }); if(data.error) showMessage(data.error, true); else { showMessage('✅ تم توصيل الطلب'); loadPlayer(); loadTrucks(); renderDelivery(); } } catch(e) { showMessage(e.message, true); } }
+        function showMessage(msg, isError) { const msgDiv = document.getElementById('message'); msgDiv.innerHTML = msg; msgDiv.className = isError ? 'message error-message' : 'message'; msgDiv.style.display = 'block'; setTimeout(() => { msgDiv.style.display = 'none'; }, 3000); }
+        async function renderDelivery() {
+            const shipmentsRes = await fetch(API_BASE + '/api/shipments/pending');
+            const shipments = await shipmentsRes.json();
+            let shipmentsHtml = shipments.length === 0 ? '<p>🚚 لا توجد طلبات نقل حالياً</p>' : '';
+            for (let s of shipments) shipmentsHtml += `<div class="shipment-card"><div>📦 ${s.item_name} x${s.quantity}</div><div>🏁 من: ${s.from_name} → إلى: ${s.to_name}</div><div>💰 ${formatMoney(s.reward)}</div><button onclick="window.acceptShipment(${s.id})">📦 استلام الطلب</button></div>`;
+            let trucksHtml = '';
+            for (let t of trucks) {
+                let statusText = t.status === 'available' ? '✅ جاهزة' : `🚛 في مهمة`;
+                let progressPercent = t.status === 'busy' && t.missionEndTime ? ((Date.now() - t.startTime) / (t.missionEndTime - t.startTime)) * 100 : 0;
+                trucksHtml += `<div class="truck-card"><div>🚚 ${t.name}</div><div>⛽ وقود: ${t.fuel}% | 🧼 نظافة: ${t.cleanliness}% | 🔧 موثوقية: ${t.reliability}%</div><div>${statusText}</div>${t.status === 'busy' ? `<div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%;"></div></div>` : ''}</div>`;
+            }
+            document.getElementById('app').innerHTML = `<div class="container"><div class="header"><div class="gold">💰 ${formatMoney(player.gold)}</div><div>👤 ${localStorage.getItem('username')}</div><div class="nav-buttons"><a href="dashboard.html" class="nav-btn">🏠 الرئيسية</a><a href="map.html" class="nav-btn">🗺️ محطات الخدمة</a><button class="logout-btn" id="logoutBtn">🚪 خروج</button></div></div><div class="content"><div class="card"><h3>🚛 شاحناتي</h3>${trucksHtml}<button onclick="window.buyTruck()">➕ شراء شاحنة جديدة (${formatMoney(100000)})</button></div><div class="card"><h3>📦 الطلبات المتاحة</h3>${shipmentsHtml}</div><div id="message" class="message"></div></div></div>`;
+            document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('token'); localStorage.removeItem('username'); window.location.href = 'index.html'; };
+        }
+        loadPlayer(); loadTrucks(); renderDelivery();
+        window.buyTruck = buyTruck; window.acceptShipment = acceptShipment; window.completeShipment = completeShipment;
+    </script>
+</body>
+</html>
