@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>محطات الخدمة - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #1e3c2c 0%, #2a5a3a 100%); font-family: system-ui, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; width: 100%; background: #2e4a2e; border-radius: 40px; padding: 20px; color: white; }
+        .stations-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .station-card { background: #1f3b1a; border-radius: 25px; padding: 15px; text-align: center; }
+        .station-card button { background: #ffcf4a; border: none; padding: 8px 15px; border-radius: 30px; cursor: pointer; margin: 5px; }
+        .nav-btn { background: #3b5e2b; color: white; text-decoration: none; display: inline-block; margin-top: 15px; padding: 8px 20px; border-radius: 30px; }
+        .message { margin-top: 15px; padding: 10px; border-radius: 20px; }
+        .error { background: #8b3a3a; color: #ffc0c0; }
+        .success { background: #2a6b2a; color: #c0ffc0; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <h1>🗺️ محطات الخدمة</h1>
+        <p>اختر محطة لشراء خدماتها (الوقود، الغسيل، الصيانة).</p>
+        <div class="stations-grid" id="stationsGrid"></div>
+        <div style="text-align:center; margin-top:20px;"><a href="dashboard.html" class="nav-btn">🏠 العودة للرئيسية</a></div>
+        <div id="msg"></div>
+    </div>
+    <script>
+        const API_BASE = 'https://farm-game-server.onrender.com';
+        function formatMoney(fils) {
+            if (fils < 10) return fils + ' فلس';
+            if (fils < 1000) return (fils / 10) + ' قرش';
+            let dinars = fils / 1000;
+            let remainder = fils % 1000;
+            if (remainder === 0) return dinars + ' دينار';
+            return dinars + ' دينار و ' + (remainder / 10) + ' قرش';
+        }
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'index.html'; throw new Error('No token'); }
+            options.headers = { 'Content-Type': 'application/json', ...options.headers, 'Authorization': `Bearer ${token}` };
+            const res = await fetch(API_BASE + url, options);
+            if (res.status === 401 || res.status === 403) { localStorage.removeItem('token'); window.location.href = 'index.html'; throw new Error('Session expired'); }
+            return res.json();
+        }
+        const stations = [
+            { id:1, name:'⛽ محطة الشمال', lat:32.0, lon:35.9, services:['fuel','wash','maintenance'], fuelPrice:5000, washPrice:3000, maintenancePrice:8000 },
+            { id:2, name:'🧼 محطة الجنوب', lat:31.8, lon:35.8, services:['wash','maintenance'], washPrice:4000, maintenancePrice:10000 }
+        ];
+        async function useService(station, serviceType) {
+            try {
+                const data = await fetchWithAuth('/api/map/service', { method: 'POST', body: JSON.stringify({ stationId: station.id, serviceType }) });
+                if (data.error) showMessage(data.error, true);
+                else showMessage(`✅ تم استخدام خدمة ${station.name}: ${data.message}`, false);
+            } catch(e) { showMessage(e.message, true); }
+        }
+        function showMessage(msg, isError) { const msgDiv = document.getElementById('msg'); msgDiv.innerHTML = `<div class="message ${isError ? 'error' : 'success'}">${msg}</div>`; setTimeout(() => msgDiv.innerHTML = '', 3000); }
+        const grid = document.getElementById('stationsGrid');
+        stations.forEach(s => {
+            let btns = '';
+            if (s.services.includes('fuel')) btns += `<button onclick="window.useService(${JSON.stringify(s).replace(/"/g,'&quot;')},'fuel')">⛽ وقود (${formatMoney(s.fuelPrice)})</button>`;
+            if (s.services.includes('wash')) btns += `<button onclick="window.useService(${JSON.stringify(s).replace(/"/g,'&quot;')},'wash')">🧼 غسيل (${formatMoney(s.washPrice)})</button>`;
+            if (s.services.includes('maintenance')) btns += `<button onclick="window.useService(${JSON.stringify(s).replace(/"/g,'&quot;')},'maintenance')">🔧 صيانة (${formatMoney(s.maintenancePrice)})</button>`;
+            grid.innerHTML += `<div class="station-card"><h3>${s.name}</h3><div>${btns}</div></div>`;
+        });
+        window.useService = useService;
+    </script>
+</body>
+</html>
