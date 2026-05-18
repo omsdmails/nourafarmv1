@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>لوحة الألعاب - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #1e3c2c 0%, #2a5a3a 100%); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .dashboard { max-width: 800px; width: 100%; background: #2e4a2e; border-radius: 40px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; color: white; }
+        h1 { color: #ffcf4a; margin-bottom: 10px; }
+        .subtitle { color: #c5e0b4; margin-bottom: 20px; }
+        .ad-section { background: #1f3b1a; border-radius: 40px; padding: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .gold-display { background: #ffcf4a; color: #1f3b1a; padding: 8px 16px; border-radius: 40px; font-weight: bold; }
+        .ad-btn { background: #ffcf4a; border: none; padding: 8px 20px; border-radius: 40px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .games-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 30px; }
+        .game-card { background: #1f3b1a; border-radius: 30px; padding: 25px; width: 180px; text-align: center; cursor: pointer; transition: 0.2s; border: 2px solid #ffcf4a; }
+        .game-card:hover { transform: scale(1.02); background: #2c5e2a; }
+        .game-card .emoji { font-size: 60px; display: block; margin-bottom: 10px; }
+        .game-card h3 { font-size: 22px; margin-bottom: 5px; }
+        .game-card p { font-size: 13px; color: #c5e0b4; }
+        .logout-btn { background: #8b5a2b; color: white; padding: 12px 25px; border: none; border-radius: 40px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .user-info { background: #1f3b1a; border-radius: 30px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard" id="app">
+        <h1>🎮 منصة الألعاب</h1>
+        <div class="subtitle">اختر لعبتك المفضلة</div>
+        <div class="user-info" id="userInfo"></div>
+        <div class="ad-section">
+            <div class="gold-display" id="goldAmount">💰 0 فلس</div>
+            <button class="ad-btn" id="watchAdBtn">📺 مشاهدة إعلان (احصل على 50 فلس)</button>
+            <div id="adMsg" style="font-size:12px; color:#aaffaa;"></div>
+        </div>
+        <div class="games-grid">
+            <div class="game-card" onclick="window.location.href='location.html'"><div class="emoji">📍</div><h3>تحديد موقعي</h3><p>لتوزيع عادل للنقل</p></div>
+            <div class="game-card" onclick="window.location.href='farm.html'"><div class="emoji">🌾</div><h3>المزرعة</h3><p>زراعة وحصاد وتربية حيوانات</p></div>
+            <div class="game-card" onclick="window.location.href='market.html'"><div class="emoji">🛒</div><h3>السوق المشترك</h3><p>بيع وشراء مع لاعبين آخرين</p></div>
+            <div class="game-card" onclick="window.location.href='restaurant.html'"><div class="emoji">🍽️</div><h3>المطعم</h3><p>طهي وجبات وبيعها بربح أعلى</p></div>
+            <div class="game-card" onclick="window.location.href='factory.html'"><div class="emoji">🏭</div><h3>المصنع</h3><p>تحويل المواد الخام</p></div>
+            <div class="game-card" onclick="window.location.href='map.html'"><div class="emoji">🗺️</div><h3>محطات الخدمة</h3><p>وقود، غسيل، صيانة</p></div>
+            <div class="game-card" onclick="window.location.href='delivery.html'"><div class="emoji">🚚</div><h3>النقل والتوصيل</h3><p>نقل البضائع عبر الشاحنات</p></div>
+            <div class="game-card" onclick="window.location.href='store.html'"><div class="emoji">🏪</div><h3>المتجر المركزي</h3><p>شراء بذور وحيوانات</p></div>
+            <div class="game-card" onclick="window.location.href='transfer.html'"><div class="emoji">💰</div><h3>تحويل الأموال</h3><p>إرسال دينار إلى لاعب آخر</p></div>
+            <div class="game-card" onclick="window.location.href='homelife.html'"><div class="emoji">🏡</div><h3>المنزل الآمن</h3><p>بناء منزل وتطوير مهارات</p></div>
+            <div class="game-card" onclick="window.location.href='suggest.html'"><div class="emoji">💡</div><h3>اقتراح لعبة</h3><p>أرسل فكرتك</p></div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">🚪 تسجيل خروج</button>
+    </div>
+    <script>
+        const API_BASE = 'https://farm-game-server.onrender.com';
+
+        function formatMoney(fils) {
+            if (fils < 10) return fils + ' فلس';
+            if (fils < 1000) return (fils / 10) + ' قرش';
+            let dinars = fils / 1000;
+            let remainder = fils % 1000;
+            if (remainder === 0) return dinars + ' دينار';
+            return dinars + ' دينار و ' + (remainder / 10) + ' قرش';
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'index.html'; throw new Error('No token'); }
+            options.headers = {
+                'Content-Type': 'application/json',
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            };
+            const res = await fetch(API_BASE + url, options);
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('token');
+                window.location.href = 'index.html';
+                throw new Error('Session expired');
+            }
+            return res.json();
+        }
+
+        async function loadUserData() {
+            try {
+                const data = await fetchWithAuth('/api/user/data');
+                document.getElementById('goldAmount').innerHTML = `💰 ${formatMoney(data.gold || 0)}`;
+            } catch (err) { console.error(err); }
+        }
+
+        async function addGoldFromAd() {
+            try {
+                await fetchWithAuth('/api/user/add-gold', { method: 'POST', body: JSON.stringify({ amount: 50 }) });
+                loadUserData();
+                document.getElementById('adMsg').innerHTML = '✅ تمت إضافة 50 فلس (5 قروش)';
+                setTimeout(() => document.getElementById('adMsg').innerHTML = '', 2000);
+            } catch (err) { document.getElementById('adMsg').innerHTML = '❌ فشل الإضافة'; }
+        }
+
+        const username = localStorage.getItem('username');
+        if (username) {
+            document.getElementById('userInfo').innerHTML = `<span>👤 ${username}</span><button id="refreshBtn" style="background:#3b5e2b; padding:5px 12px;">🔄 تحديث</button>`;
+            document.getElementById('refreshBtn').onclick = () => location.reload();
+            loadUserData();
+        } else { window.location.href = 'index.html'; }
+
+        document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('token'); localStorage.removeItem('username'); window.location.href = 'index.html'; };
+        document.getElementById('watchAdBtn').onclick = addGoldFromAd;
+    </script>
+</body>
+</html>
