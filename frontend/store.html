@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>المتجر المركزي - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(145deg, #1e3c2c 0%, #2a5a3a 100%); font-family: system-ui, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .store-container { max-width: 800px; width: 100%; background: #2e4a2e; border-radius: 35px; overflow: hidden; color: #f5f5dc; box-shadow: 0 15px 35px rgba(0,0,0,0.4); }
+        .header { background: #1f3b1a; padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .gold { background: #ffcf4a; color: #1f3b1a; padding: 8px 16px; border-radius: 40px; font-weight: bold; }
+        .nav-buttons { display: flex; gap: 10px; }
+        .nav-btn { background: #3b5e2b; color: white; padding: 8px 16px; border-radius: 30px; text-decoration: none; font-weight: bold; }
+        .content { padding: 20px; }
+        .product-card { background: #1f3b1a; border-radius: 20px; padding: 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .product-card button { background: #ffcf4a; border: none; padding: 6px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        hr { border-color: #4f7840; margin: 15px 0; }
+        .message { background: #2a6b2a; padding: 10px; border-radius: 30px; text-align: center; margin-top: 15px; display: none; }
+        .error-message { background: #8b3a3a; }
+        .logout-btn { background: #8b5a2b; color: white; }
+    </style>
+</head>
+<body>
+    <div id="app">⏳ جاري التحميل...</div>
+    <script>
+        const API_BASE = 'https://farm-game-server.onrender.com';
+        function formatMoney(fils) {
+            if (fils < 10) return fils + ' فلس';
+            if (fils < 1000) return (fils / 10) + ' قرش';
+            let dinars = fils / 1000;
+            let remainder = fils % 1000;
+            if (remainder === 0) return dinars + ' دينار';
+            return dinars + ' دينار و ' + (remainder / 10) + ' قرش';
+        }
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'index.html'; throw new Error('No token'); }
+            options.headers = { 'Content-Type': 'application/json', ...options.headers, 'Authorization': `Bearer ${token}` };
+            const res = await fetch(API_BASE + url, options);
+            if (res.status === 401 || res.status === 403) { localStorage.removeItem('token'); window.location.href = 'index.html'; throw new Error('Session expired'); }
+            return res.json();
+        }
+        const STORE_ITEMS = {
+            'Wheat': { name:'قمح', emoji:'🌾', price:2000, type:'بذور', desc:'بذور قمح' },
+            'Carrot': { name:'جزر', emoji:'🥕', price:1000, type:'بذور', desc:'بذور جزر' },
+            'Chicken': { name:'دجاجة', emoji:'🐔', price:20000, type:'حيوانات', desc:'تنتج بيضاً' },
+            'Cow': { name:'بقرة', emoji:'🐄', price:50000, type:'حيوانات', desc:'تنتج حليباً' }
+        };
+        let player = { gold: 0, inventory: {} };
+        async function loadData() { try { const data = await fetchWithAuth('/api/user/data'); player.gold = data.gold; player.inventory = data.inventory || {}; renderStore(); } catch(e) {} }
+        async function buyItem(itemKey) {
+            const item = STORE_ITEMS[itemKey];
+            if (player.gold < item.price) { showMessage(`⚠️ لا تملك ${formatMoney(item.price)}`, true); return; }
+            try {
+                const data = await fetchWithAuth('/api/store/buy', { method: 'POST', body: JSON.stringify({ itemKey, price: item.price, type: item.type }) });
+                if (data.error) showMessage(data.error, true);
+                else { showMessage(`✅ تم شراء ${item.emoji} ${item.name}`); loadData(); }
+            } catch(e) { showMessage(e.message, true); }
+        }
+        function showMessage(msg, isError) { const msgDiv = document.getElementById('message'); msgDiv.innerHTML = msg; msgDiv.className = isError ? 'message error-message' : 'message'; msgDiv.style.display = 'block'; setTimeout(() => { msgDiv.style.display = 'none'; }, 3000); }
+        function renderStore() {
+            let storeHtml = '<div class="category-section"><div class="category-title">📦 بذور</div>';
+            for (let [key,item] of Object.entries(STORE_ITEMS)) if (item.type==='بذور') storeHtml += `<div class="product-card"><div>${item.emoji} ${item.name}</div><div>💰 ${formatMoney(item.price)}</div><div style="font-size:13px;">${item.desc}</div><button onclick="window.buyItem('${key}')">شراء</button></div>`;
+            storeHtml += `</div><div class="category-section"><div class="category-title">🐔 حيوانات</div>`;
+            for (let [key,item] of Object.entries(STORE_ITEMS)) if (item.type==='حيوانات') storeHtml += `<div class="product-card"><div>${item.emoji} ${item.name}</div><div>💰 ${formatMoney(item.price)}</div><div style="font-size:13px;">${item.desc}</div><button onclick="window.buyItem('${key}')">شراء</button></div>`;
+            storeHtml += `</div>`;
+            document.getElementById('app').innerHTML = `<div class="store-container"><div class="header"><div class="gold">💰 ${formatMoney(player.gold)}</div><div>👤 ${localStorage.getItem('username')}</div><div class="nav-buttons"><a href="dashboard.html" class="nav-btn">🏠 الرئيسية</a><a href="market.html" class="nav-btn">🛒 السوق</a><button class="logout-btn" id="logoutBtn">🚪 خروج</button></div></div><div class="content"><h2>🏪 المتجر المركزي</h2>${storeHtml}<div id="message" class="message"></div></div></div>`;
+            document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('token'); localStorage.removeItem('username'); window.location.href = 'index.html'; };
+        }
+        loadData();
+        window.buyItem = buyItem;
+    </script>
+</body>
+</html>
