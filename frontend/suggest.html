@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>اقتراح لعبة جديدة - منصة الألعاب</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: linear-gradient(135deg, #1e3c2c 0%, #2a5a3a 100%); font-family: system-ui, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { max-width: 550px; width: 100%; background: #2e4a2e; border-radius: 40px; padding: 30px; color: white; text-align: center; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 30px; border: none; font-size: 15px; }
+        button { background: #ffcf4a; border: none; padding: 12px; border-radius: 40px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .nav-btn { background: #3b5e2b; color: white; text-decoration: none; display: inline-block; margin-top: 15px; padding: 8px 20px; border-radius: 30px; }
+        .info { font-size: 13px; color: #c5e0b4; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💡 اقتراح لعبة جديدة</h1>
+        <p>هل لديك فكرة لعبة تريد إضافتها إلى منصتنا؟ شاركنا إياها!</p>
+        <input type="text" id="playerName" placeholder="اسمك (اختياري)">
+        <select id="gameType">
+            <option value="نقل ولوجستيات">🚚 نقل ولوجستيات</option>
+            <option value="زراعة وحيوانات">🌾 زراعة وحيوانات</option>
+            <option value="صناعة وتصنيع">🏭 صناعة وتصنيع</option>
+            <option value="مدن وإدارة">🏙️ مدن وإدارة</option>
+            <option value="تعدين">⛏️ تعدين</option>
+            <option value="صيد وبحري">🐟 صيد وبحري</option>
+            <option value="طيران وفضاء">✈️ طيران وفضاء</option>
+            <option value="أخرى">🎲 أخرى</option>
+        </select>
+        <textarea id="idea" rows="4" placeholder="اشرح فكرتك هنا..."></textarea>
+        <button id="sendBtn">📧 إرسال الاقتراح</button>
+        <div class="info">سيتم فتح بريدك الإلكتروني تلقائياً. يمكنك تعديل الرسالة قبل الإرسال.</div>
+        <a href="dashboard.html" class="nav-btn">🏠 العودة للرئيسية</a>
+        <div id="msg"></div>
+    </div>
+    <script>
+        document.getElementById('sendBtn').onclick=()=>{
+            const name=document.getElementById('playerName').value.trim();
+            const type=document.getElementById('gameType').value;
+            const idea=document.getElementById('idea').value.trim();
+            if(!idea){ document.getElementById('msg').innerHTML='<div style="color:#ffaaaa;">⚠️ يرجى كتابة فكرتك</div>'; return; }
+            const subject=`اقتراح لعبة جديدة - ${type}`;
+            const body=`الاسم: ${name||'لاعب مجهول'}\nنوع اللعبة: ${type}\n\nالفكرة:\n${idea}`;
+            window.location.href=`mailto:omsdmails@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            document.getElementById('msg').innerHTML='<div style="color:#aaffaa;">✅ سيتم فتح بريدك. أرسل الرسالة لتصلنا فكرتك.</div>';
+        };
+    </script>
+</body>
+</html>
